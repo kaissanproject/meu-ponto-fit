@@ -247,19 +247,21 @@
             fetch(`/search?q=${query}`)
                 .then(response => response.json())
                 .then(data => {
-                    data.forEach(item => {
-                        // Cria um item para cada sugestão
-                        const itemDiv = document.createElement('DIV');
-                        itemDiv.innerHTML = "<strong>" + item.substr(0, query.length) + "</strong>";
-                        itemDiv.innerHTML += item.substr(query.length);
-                        itemDiv.innerHTML += "<input type='hidden' value='" + item + "'>";
-                        
-                        itemDiv.addEventListener('click', function(e) {
-                            alimentoInput.value = this.getElementsByTagName('input')[0].value;
-                            closeAllLists();
+                    // Adicionado um check para garantir que 'data' é uma lista
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            const itemDiv = document.createElement('DIV');
+                            itemDiv.innerHTML = "<strong>" + item.substr(0, query.length) + "</strong>";
+                            itemDiv.innerHTML += item.substr(query.length);
+                            itemDiv.innerHTML += "<input type='hidden' value='" + item + "'>";
+                            
+                            itemDiv.addEventListener('click', function(e) {
+                                alimentoInput.value = this.getElementsByTagName('input')[0].value;
+                                closeAllLists();
+                            });
+                            autocompleteList.appendChild(itemDiv);
                         });
-                        autocompleteList.appendChild(itemDiv);
-                    });
+                    }
                 })
                 .catch(error => console.error('Erro no autocomplete:', error));
         });
@@ -288,16 +290,21 @@
             resultadoDiv.style.display = 'block';
             resultadoDiv.innerHTML = '<span>Calculando...</span>';
 
+            const dataToSend = {
+                alimento: alimento,
+                quantidade: quantidade
+            };
+
+            // !!! LINHA DE DEBUG ADICIONADA !!!
+            console.log("Enviando para /calculate:", dataToSend);
+
             // Faz a requisição para a API de cálculo do Flask
             fetch('/calculate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    alimento: alimento,
-                    quantidade: quantidade
-                })
+                body: JSON.stringify(dataToSend)
             })
             .then(response => response.json())
             .then(data => {
