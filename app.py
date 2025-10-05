@@ -1,150 +1,110 @@
 import os
 import psycopg2
 from flask import Flask, render_template, request, jsonify
+import json # Importa a biblioteca JSON
 
-# --- Inicialização do Flask ---
-# Cria uma instância da aplicação Flask.
-# O '__name__' é uma variável especial em Python que obtém o nome do módulo atual.
+# --- CONFIGURAÇÃO ---
 app = Flask(__name__)
 
-# --- Configuração do Banco de Dados ---
-# Pega a URL de conexão do banco de dados das variáveis de ambiente configuradas na Render.
-# Isso é uma boa prática de segurança para não expor credenciais no código.
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
+# Função para obter a conexão com o banco de dados
 def get_db_connection():
     """Cria e retorna uma nova conexão com o banco de dados."""
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
-    except psycopg2.Error as e:
-        print(f"Erro ao conectar ao banco de dados: {e}")
-        return None
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    return conn
 
-# --- Definição da Fórmula de Pontos ---
-# Esta é a lógica de negócio principal da nossa aplicação.
-# A fórmula pode variar entre diferentes "Dietas dos Pontos".
-# Usamos uma fórmula comum como exemplo: Pontos = (Calorias / 60) + (Gorduras / 9)
-def calcular_pontos(calorias, gorduras):
-    """Calcula os pontos de um alimento com base em suas calorias e gorduras."""
-    if calorias is None or gorduras is None:
-        return 0
-    # A função max(0, ...) garante que o resultado nunca seja negativo.
-    return max(0, round((float(calorias) / 60) + (float(gorduras) / 9)))
+# --- FÓRMULAS DA DIETA DOS PONTOS ---
+def calcular_pontos(calorias, gordura, fibra, proteina):
+    """Calcula os pontos de um alimento com base em seus valores nutricionais."""
+    # A fibra é limitada a 4g no cálculo original
+    fibra_limitada = min(fibra, 4)
+    
+    # Fórmula dos Pontos (uma das versões mais comuns)
+    pontos_proteina = proteina / 10
+    pontos_calorias = calorias / 50
+    pontos_gordura = gordura / 12
+    pontos_fibra = fibra_limitada / 5
+    
+    total_pontos = pontos_calorias + pontos_gordura - pontos_fibra - pontos_proteina
+    
+    # Arredonda para o número inteiro mais próximo e garante que seja no mínimo 0
+    return max(0, round(total_pontos))
 
-# --- Rotas da Aplicação (Endpoints) ---
+# --- ROTAS DA APLICAÇÃO (ENDPOINTS) ---
 
 @app.route('/')
 def index():
-    """
-    Rota principal que renderiza a página inicial (index.html).
-    O Flask procura por este arquivo na pasta 'templates' por padrão.
-    """
+    """Renderiza a página principal da aplicação."""
     return render_template('index.html')
 
 @app.route('/search')
 def search():
-    """
-    Rota de API para a funcionalidade de autocomplete.
-    Recebe um parâmetro 'q' da URL (ex: /search?q=arro) e busca no banco.
-    """
+    """Endpoint de busca para o autocomplete de alimentos."""
     query = request.args.get('q', '')
-    
-    # Previne buscas vazias ou muito curtas para não sobrecarregar o banco.
     if len(query) < 2:
         return jsonify([])
 
     conn = get_db_connection()
-    if conn is None:
-        return jsonify({"error": "Falha na conexão com o banco de dados"}), 500
-
-    results = []
-    try:
-        with conn.cursor() as cur:
-            # Usamos 'ILIKE' para uma busca case-insensitive (não diferencia maiúsculas/minúsculas).
-            # O padrão 'query%' busca por alimentos que COMEÇAM com o texto digitado.
-            # O 'LIMIT 10' restringe o número de resultados para melhorar a performance.
-            search_query = f"{query}%"
-            cur.execute(
-                "SELECT nome_alimento FROM alimentos WHERE nome_alimento ILIKE %s ORDER BY nome_alimento LIMIT 10", 
-                (search_query,)
-            )
-            # O fetchall() busca todas as linhas retornadas pela consulta.
-            # Como cada linha é uma tupla com um elemento (o nome), extraímos esse elemento.
-            results = [row[0] for row in cur.fetchall()]
-    except psycopg2.Error as e:
-        print(f"Erro na busca: {e}")
-    finally:
-        conn.close()
-
-    # Retorna a lista de nomes de alimentos em formato JSON.
-    return jsonify(results)
+    with conn.cursor() as cur:
+        # Busca por alimentos que começam com o texto digitado (case-insensitive)
+        cur.execute("SELECT nome_alimento FROM alimentos WHERE nome_alimento ILIKE %s LIMIT 10", (query + '%',))
+        alimentos = [row[0] for row in cur.fetchall()]
+    conn.close()
+    return jsonify(alimentos)
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
-    """
-    Rota de API que recebe os dados do formulário, busca o alimento no banco,
-    calcula os pontos e retorna o resultado.
-    """
-    data = request.get_json()
-    food_name = data.get('food')
-    quantity_str = data.get('quantity')
+    """Endpoint que recebe um alimento e quantidade, e calcula os pontos."""
+    # --- NOVAS LINHAS PARA DEPURAR O ERRO ---
+    print("--- NOVA REQUISIÇÃO EM /CALCULATE ---")
+    print("CABEÇALHOS:", request.headers)
+    print("CORPO (RAW):", request.data)
+    # ----------------------------------------
+    
+    try:
+        data = request.get_json()
+        # Se get_json() não funcionar, tenta ler o corpo da requisição manualmente
+        if not data and request.data:
+            print("request.get_json() falhou. Tentando carregar request.data manualmente.")
+            data = json.loads(request.data)
+    except Exception as e:
+        print(f"ERRO AO PROCESSAR JSON: {e}")
+        return jsonify({'error': 'Formato de dados inválido.'}), 400
 
-    # Validação básica dos dados recebidos.
-    if not food_name or not quantity_str:
+    print("DADOS PROCESSADOS:", data)
+
+    if not data or 'alimento' not in data or 'quantidade' not in data:
+        print("ERRO: Faltam 'alimento' ou 'quantidade' nos dados.")
         return jsonify({'error': 'Nome do alimento e quantidade são obrigatórios.'}), 400
 
+    nome_alimento = data['alimento']
     try:
-        quantity = float(quantity_str)
-        if quantity <= 0:
-            raise ValueError
-    except ValueError:
-        return jsonify({'error': 'A quantidade deve ser um número positivo.'}), 400
+        quantidade_gramas = float(data['quantidade'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Quantidade deve ser um número válido.'}), 400
 
     conn = get_db_connection()
-    if conn is None:
-        return jsonify({"error": "Falha na conexão com o banco de dados"}), 500
+    with conn.cursor() as cur:
+        cur.execute("SELECT calorias_kcal, gordura_total_g, fibra_alimentar_g, proteina_g FROM alimentos WHERE nome_alimento = %s", (nome_alimento,))
+        alimento_data = cur.fetchone()
+    conn.close()
 
-    try:
-        with conn.cursor() as cur:
-            # Busca os dados nutricionais exatos do alimento selecionado.
-            cur.execute(
-                "SELECT calorias_kcal, gordura_total_g FROM alimentos WHERE nome_alimento = %s",
-                (food_name,)
-            )
-            food_data = cur.fetchone() # fetchone() pega a primeira (e única) linha do resultado.
-        
-        if food_data:
-            calorias_por_100g, gorduras_por_100g = food_data
-            
-            # Cálculo proporcional à quantidade informada pelo usuário.
-            calorias_total = (float(calorias_por_100g) / 100) * quantity
-            gorduras_total = (float(gorduras_por_100g) / 100) * quantity
-            
-            # Usa a nossa função de cálculo de pontos.
-            pontos = calcular_pontos(calorias_total, gorduras_total)
-            
-            # Retorna o resultado em formato JSON para o frontend.
-            return jsonify({
-                'pontos': pontos,
-                'food_name': food_name,
-                'quantity': quantity
-            })
-        else:
-            return jsonify({'error': 'Alimento não encontrado no banco de dados.'}), 404
+    if not alimento_data:
+        return jsonify({'error': 'Alimento não encontrado no banco de dados.'}), 404
 
-    except psycopg2.Error as e:
-        print(f"Erro no cálculo: {e}")
-        return jsonify({'error': 'Ocorreu um erro ao processar sua solicitação.'}), 500
-    finally:
-        conn.close()
+    # Calcula os valores para a quantidade informada
+    calorias, gordura, fibra, proteina = [((val / 100) * quantidade_gramas) if val is not None else 0 for val in alimento_data]
+    
+    pontos = calcular_pontos(calorias, gordura, fibra, proteina)
 
+    return jsonify({
+        'alimento': nome_alimento,
+        'quantidade': int(quantidade_gramas),
+        'pontos': pontos
+    })
 
-# --- Execução da Aplicação ---
-# Este bloco de código só é executado quando o script `app.py` é rodado diretamente.
-# Quando a Render executa a aplicação via Gunicorn, esta parte não é usada.
+# --- INICIALIZAÇÃO DA APLICAÇÃO ---
 if __name__ == '__main__':
-    # O 'debug=True' é útil para desenvolvimento, pois reinicia o servidor
-    # automaticamente a cada alteração no código e mostra erros detalhados no navegador.
-    # NUNCA use debug=True em produção.
+    # Esta parte é usada para rodar a aplicação localmente (não usada pela Render)
+    # A Render usa o comando definido no "Start Command", como 'gunicorn app:app'
     app.run(debug=True)
+
