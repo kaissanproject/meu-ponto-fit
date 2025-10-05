@@ -1,334 +1,277 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Ponto Fit - Calculadora de Dieta dos Pontos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS Reset Básico */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Estilos Gerais */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc; /* cinza bem claro */
         }
-
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 20px;
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
         }
-
-        /* Cabeçalho */
-        .header {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 1px solid #e9ecef;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: #28a745; /* Verde principal */
-            font-weight: 700;
-        }
-
-        /* Seções */
-        .section {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        .section h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-            color: #343a40;
-        }
-
-        /* Formulário da Calculadora */
-        .form-group {
-            margin-bottom: 20px;
-            position: relative; /* Necessário para o autocomplete */
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
+        .btn-green {
+            background-color: #4CAF50; /* Verde principal */
+            color: white;
             font-weight: 600;
-            color: #495057;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
         }
-
-        .form-group input {
+        .btn-green:hover {
+            background-color: #45a049; /* Verde um pouco mais escuro */
+        }
+        .form-input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
-
-        .form-group input:focus {
+        .form-input:focus {
             outline: none;
-            border-color: #28a745;
-            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
-
-        /* Estilos do Autocomplete */
-        .autocomplete-items {
+        #autocomplete-list {
             position: absolute;
-            border: 1px solid #d4d4d4;
-            border-bottom: none;
+            width: calc(100% - 2rem); /* Ajuste para o padding do card */
+            border: 1px solid #ddd;
             border-top: none;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0;
             max-height: 200px;
             overflow-y: auto;
+            z-index: 1000;
+            background: white;
+            border-radius: 0 0 8px 8px;
         }
-
-        .autocomplete-items div {
+        #autocomplete-list div {
             padding: 10px;
             cursor: pointer;
-            background-color: #fff;
-            border-bottom: 1px solid #d4d4d4;
+            border-bottom: 1px solid #eee;
         }
-
-        .autocomplete-items div:hover {
-            background-color: #e9e9e9;
-        }
-
-        /* Botão */
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: #28a745;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        .btn:hover {
-            background-color: #218838;
-        }
-        
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        /* Seção de Resultados */
-        #resultado {
-            margin-top: 25px;
-            padding: 20px;
-            background-color: #e2f5e7;
-            border-left: 5px solid #28a745;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 600;
-            display: none; /* Começa escondido */
-        }
-
-        #resultado span {
-            color: #155724;
-        }
-        
-        /* Seção de Leads */
-        .lead-section p {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-        }
-
-        /* Rodapé */
-        .footer {
-            text-align: center;
-            padding: 20px 0;
-            color: #6c757d;
-            font-size: 0.9rem;
+        #autocomplete-list div:hover {
+            background-color: #f1f1f1;
         }
     </style>
 </head>
-<body>
+<body class="text-gray-700">
 
-    <div class="container">
-        <!-- CABEÇALHO -->
-        <header class="header">
-            <h1>Meu Ponto Fit</h1>
-        </header>
+    <!-- CABEÇALHO -->
+    <header class="text-center py-8">
+        <h1 class="text-4xl font-bold text-gray-800">Meu Ponto Fit</h1>
+    </header>
 
-        <main>
-            <!-- SEÇÃO DA CALCULADORA -->
-            <section class="section">
-                <h2>Calculadora de Pontos</h2>
-                <form id="calculadoraForm">
-                    <div class="form-group" id="autocomplete-container">
-                        <label for="alimento">Qual alimento você quer calcular?</label>
-                        <input type="text" id="alimento" name="alimento" placeholder="Ex: Arroz, cozido" required autocomplete="off">
-                    </div>
-                    <div class="form-group">
-                        <label for="quantidade">Qual a quantidade em gramas?</label>
-                        <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 150" required>
-                    </div>
-                    <button type="submit" class="btn">Calcular Pontos</button>
-                </form>
+    <main class="container mx-auto px-4 max-w-3xl">
 
-                <!-- Área para exibir o resultado -->
-                <div id="resultado"></div>
-            </section>
+        <!-- CARD PRINCIPAL: CALCULADORA DE ALIMENTOS -->
+        <section class="card relative" id="calculadora-alimentos">
+            <h2 class="text-2xl font-semibold text-center mb-2">Calculadora de Pontos</h2>
+            <p class="text-center text-gray-500 mb-6">Descubra os pontos dos seus alimentos de forma fácil e rápida.</p>
 
-            <!-- SEÇÃO DE CAPTURA DE LEADS -->
-            <section class="section lead-section">
-                <h2>Quer a Tabela Completa?</h2>
-                <p>Receba no seu WhatsApp a nossa Tabela em PDF com os Pontos dos 100 Alimentos Mais Populares!</p>
-                <!-- 
-                    !!!! IMPORTANTE !!!! 
-                    COLE A SUA URL DO FORMSPREE AQUI EMBAIXO, NO LUGAR DE "SEU_ENDPOINT_DO_FORMSPREE_AQUI"
-                -->
-                <form action="https://formspree.io/f/mrbyleoq" method="POST">
-                    <div class="form-group">
-                        <label for="nome">Seu Nome</label>
-                        <input type="text" id="nome" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="whatsapp">Seu WhatsApp</label>
-                        <input type="text" id="whatsapp" name="whatsapp" placeholder="(XX) XXXXX-XXXX" required>
-                    </div>
-                    <button type="submit" class="btn">Receber Tabela por WhatsApp!</button>
-                </form>
-            </section>
-        </main>
+            <div class="space-y-4">
+                <div>
+                    <label for="alimento" class="block mb-2 font-medium">Qual alimento você quer calcular?</label>
+                    <input type="text" id="alimento" class="form-input" autocomplete="off" placeholder="Ex: Arroz integral cozido">
+                    <div id="autocomplete-list"></div>
+                </div>
+                <div>
+                    <label for="quantidade" class="block mb-2 font-medium">Qual a quantidade (em gramas)?</label>
+                    <input type="number" id="quantidade" class="form-input" placeholder="Ex: 150">
+                </div>
+            </div>
+            
+            <button onclick="calcularPontosAlimento()" class="btn-green w-full mt-6">Calcular Pontos</button>
 
-        <!-- RODAPÉ -->
-        <footer class="footer">
-            <p>&copy; 2024 Meu Ponto Fit. Todos os direitos reservados.</p>
-        </footer>
-    </div>
+            <div id="resultado-alimento" class="mt-6 text-center"></div>
+        </section>
+        
+        <!-- NOVA SEÇÃO: CALCULADORA DE META DIÁRIA -->
+        <section class="card" id="calculadora-meta">
+            <h2 class="text-2xl font-semibold text-center mb-2">Calcule sua Meta Diária de Pontos</h2>
+            <p class="text-center text-gray-500 mb-6">Descubra quantos pontos você pode consumir por dia para atingir seu objetivo.</p>
+            
+            <form id="meta-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="genero" class="block mb-2 font-medium">Gênero:</label>
+                    <select id="genero" class="form-input">
+                        <option value="7">Feminino</option>
+                        <option value="15">Masculino</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="idade" class="block mb-2 font-medium">Idade:</label>
+                    <input type="number" id="idade" class="form-input" placeholder="Ex: 35">
+                </div>
+                <div>
+                    <label for="peso" class="block mb-2 font-medium">Peso (kg):</label>
+                    <input type="number" id="peso" class="form-input" placeholder="Ex: 70">
+                </div>
+                <div>
+                    <label for="altura" class="block mb-2 font-medium">Altura (cm):</label>
+                    <input type="number" id="altura" class="form-input" placeholder="Ex: 165">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="atividade" class="block mb-2 font-medium">Nível de Atividade:</label>
+                    <select id="atividade" class="form-input">
+                        <option value="0">Sedentário (maioria do tempo sentado)</option>
+                        <option value="2">Leve (maioria do tempo em pé)</option>
+                        <option value="4">Moderado (trabalho com movimentação)</option>
+                        <option value="6">Intenso (trabalho pesado ou muito exercício)</option>
+                    </select>
+                </div>
+            </form>
+
+            <button onclick="calcularMetaDiaria()" class="btn-green w-full mt-6">Calcular Minha Meta</button>
+
+            <div id="resultado-meta" class="mt-6 text-center"></div>
+        </section>
+
+        <!-- SEÇÃO DE CAPTURA DE LEADS -->
+        <section class="card text-center">
+            <h2 class="text-2xl font-semibold mb-2">Quer a Tabela Completa?</h2>
+            <p class="text-gray-500 mb-6">Receba no seu WhatsApp a nossa Tabela em PDF com os Pontos dos 100 Alimentos Mais Populares!</p>
+            <form action="https://formspree.io/f/mrbyleoq" method="POST" class="flex flex-col md:flex-row gap-4 justify-center">
+                <input type="text" name="nome" class="form-input md:w-1/3" placeholder="Seu Nome" required>
+                <input type="text" name="whatsapp" class="form-input md:w-1/3" placeholder="Seu WhatsApp" required>
+                <button type="submit" class="btn-green">Receber PDF</button>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="text-center py-8 text-gray-500">
+        <p>&copy; 2025 Meu Ponto Fit. Todos os direitos reservados.</p>
+    </footer>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('calculadoraForm');
+        // --- LÓGICA DA CALCULADORA DE ALIMENTOS ---
         const alimentoInput = document.getElementById('alimento');
-        const resultadoDiv = document.getElementById('resultado');
-        let currentFocus = -1;
+        const autocompleteList = document.getElementById('autocomplete-list');
+        const resultadoAlimentoDiv = document.getElementById('resultado-alimento');
 
-        // --- LÓGICA DO AUTOCOMPLETE ---
-        alimentoInput.addEventListener('input', function(e) {
-            const query = this.value;
-            closeAllLists();
-            if (!query || query.length < 2) {
-                return false;
+        // Evento para buscar alimentos enquanto o usuário digita
+        alimentoInput.addEventListener('input', async () => {
+            const query = alimentoInput.value;
+            if (query.length < 2) {
+                autocompleteList.innerHTML = '';
+                return;
             }
-            currentFocus = -1;
-            
-            // Cria a div que vai conter os itens do autocomplete
-            const autocompleteList = document.createElement('DIV');
-            autocompleteList.setAttribute('id', this.id + 'autocomplete-list');
-            autocompleteList.setAttribute('class', 'autocomplete-items');
-            this.parentNode.appendChild(autocompleteList);
-            
-            // Faz a requisição para a API de busca do Flask
-            fetch(`/search?q=${query}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Adicionado um check para garantir que 'data' é uma lista
-                    if (Array.isArray(data)) {
-                        data.forEach(item => {
-                            const itemDiv = document.createElement('DIV');
-                            itemDiv.innerHTML = "<strong>" + item.substr(0, query.length) + "</strong>";
-                            itemDiv.innerHTML += item.substr(query.length);
-                            itemDiv.innerHTML += "<input type='hidden' value='" + item + "'>";
-                            
-                            itemDiv.addEventListener('click', function(e) {
-                                alimentoInput.value = this.getElementsByTagName('input')[0].value;
-                                closeAllLists();
-                            });
-                            autocompleteList.appendChild(itemDiv);
-                        });
-                    }
-                })
-                .catch(error => console.error('Erro no autocomplete:', error));
+            try {
+                const response = await fetch(`/search?q=${query}`);
+                const data = await response.json();
+                
+                autocompleteList.innerHTML = '';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.textContent = item;
+                    div.addEventListener('click', () => {
+                        alimentoInput.value = item;
+                        autocompleteList.innerHTML = '';
+                    });
+                    autocompleteList.appendChild(div);
+                });
+            } catch (error) {
+                console.error("Erro no autocomplete:", error);
+            }
         });
 
-        function closeAllLists(elmnt) {
-            const items = document.getElementsByClassName('autocomplete-items');
-            for (let i = 0; i < items.length; i++) {
-                if (elmnt != items[i] && elmnt != alimentoInput) {
-                    items[i].parentNode.removeChild(items[i]);
+        // Função para calcular os pontos de um alimento
+        async function calcularPontosAlimento() {
+            const nomeAlimento = alimentoInput.value;
+            const quantidade = document.getElementById('quantidade').value;
+
+            if (!nomeAlimento || !quantidade) {
+                exibirMensagemAlimento('Erro: Nome do alimento e quantidade são obrigatórios.', 'red');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alimento: nomeAlimento, quantidade: quantidade })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const mensagem = `<span class="font-semibold">${result.quantidade}g de ${result.alimento}</span> equivale a <span class="text-2xl font-bold text-green-600">${result.pontos}</span> pontos.`;
+                    exibirMensagemAlimento(mensagem, 'green');
+                } else {
+                    throw new Error(result.error || 'Erro desconhecido');
                 }
+            } catch (error) {
+                console.error("Erro ao calcular:", error);
+                exibirMensagemAlimento(`Erro: ${error.message}. Tente novamente.`, 'red');
             }
         }
 
-        document.addEventListener('click', function (e) {
-            closeAllLists(e.target);
-        });
+        // Função para exibir mensagens da calculadora de alimentos
+        function exibirMensagemAlimento(mensagem, cor) {
+            const colorClass = cor === 'red' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-800';
+            resultadoAlimentoDiv.innerHTML = `<div class="p-4 rounded-lg ${colorClass}">${mensagem}</div>`;
+        }
 
-        // --- LÓGICA DO CÁLCULO DE PONTOS ---
-        form.addEventListener('submit', function(event) {
-            event.preventDefault(); // Impede o recarregamento da página
 
-            const alimento = alimentoInput.value;
-            const quantidade = document.getElementById('quantidade').value;
-
-            // Mostra uma mensagem de carregando...
-            resultadoDiv.style.display = 'block';
-            resultadoDiv.innerHTML = '<span>Calculando...</span>';
-
-            const dataToSend = {
-                alimento: alimento,
-                quantidade: quantidade
-            };
-
-            // !!! LINHA DE DEBUG ADICIONADA !!!
-            console.log("Enviando para /calculate:", dataToSend);
-
-            // Faz a requisição para a API de cálculo do Flask
-            fetch('/calculate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToSend)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    // Se o backend retornar um erro, exibe a mensagem de erro
-                    resultadoDiv.innerHTML = `<span style="color: #721c24;">Erro: ${data.error}</span>`;
-                    resultadoDiv.style.backgroundColor = '#f8d7da';
-                    resultadoDiv.style.borderColor = '#f5c6cb';
-                } else {
-                    // Se for sucesso, exibe o resultado formatado
-                    resultadoDiv.innerHTML = `<span>${data.quantidade}g de ${data.alimento} equivale(m) a <strong>${data.pontos} pontos</strong>.</span>`;
-                    resultadoDiv.style.backgroundColor = '#e2f5e7';
-                    resultadoDiv.style.borderColor = '#28a745';
+        // --- NOVA LÓGICA: CALCULADORA DE META DIÁRIA ---
+        function calcularMetaDiaria() {
+            const resultadoMetaDiv = document.getElementById('resultado-meta');
+            
+            try {
+                // 1. Coletar os valores do formulário
+                const genero = parseInt(document.getElementById('genero').value);
+                const idade = parseInt(document.getElementById('idade').value);
+                const peso = parseInt(document.getElementById('peso').value);
+                const altura = parseInt(document.getElementById('altura').value);
+                const atividade = parseInt(document.getElementById('atividade').value);
+                
+                // Validar se os campos numéricos foram preenchidos
+                if (isNaN(idade) || isNaN(peso) || isNaN(altura)) {
+                    throw new Error("Por favor, preencha todos os campos com números válidos.");
                 }
-            })
-            .catch(error => {
-                // Erro de conexão ou rede
-                console.error('Erro ao calcular:', error);
-                resultadoDiv.innerHTML = `<span style="color: #721c24;">Erro: Não foi possível conectar ao servidor. Tente novamente mais tarde.</span>`;
-                resultadoDiv.style.backgroundColor = '#f8d7da';
-                resultadoDiv.style.borderColor = '#f5c6cb';
-            });
-        });
-    });
+
+                // 2. Calcular os pontos de cada fator
+                let pontosIdade = 0;
+                if (idade >= 18 && idade <= 20) pontosIdade = 5;
+                else if (idade >= 21 && idade <= 35) pontosIdade = 4;
+                else if (idade >= 36 && idade <= 50) pontosIdade = 3;
+                else if (idade >= 51 && idade <= 65) pontosIdade = 2;
+                else if (idade > 65) pontosIdade = 1;
+
+                const pontosPeso = Math.floor(peso / 10);
+
+                const pontosAltura = altura < 160 ? 1 : 2;
+
+                // 3. Somar todos os pontos
+                const totalPontos = genero + pontosIdade + pontosPeso + pontosAltura + atividade;
+
+                // 4. Exibir o resultado
+                const mensagem = `Sua meta diária para perda de peso é de <br> <span class="text-3xl font-bold text-green-600">${totalPontos}</span> pontos.`;
+                exibirMensagemMeta(mensagem, 'green');
+
+            } catch (error) {
+                exibirMensagemMeta(`Erro: ${error.message}`, 'red');
+            }
+        }
+
+        // Função para exibir mensagens da calculadora de meta diária
+        function exibirMensagemMeta(mensagem, cor) {
+            const resultadoMetaDiv = document.getElementById('resultado-meta');
+            const colorClass = cor === 'red' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-800';
+            resultadoMetaDiv.innerHTML = `<div class="p-4 rounded-lg ${colorClass}">${mensagem}</div>`;
+        }
+
     </script>
 </body>
 </html>
