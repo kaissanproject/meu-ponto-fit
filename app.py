@@ -1,7 +1,6 @@
 import os
 import psycopg2
 from flask import Flask, render_template, request, jsonify
-import json # Importa a biblioteca JSON
 
 # --- CONFIGURAÇÃO ---
 app = Flask(__name__)
@@ -54,26 +53,14 @@ def search():
 @app.route('/calculate', methods=['POST'])
 def calculate():
     """Endpoint que recebe um alimento e quantidade, e calcula os pontos."""
-    # --- NOVAS LINHAS PARA DEPURAR O ERRO ---
-    print("--- NOVA REQUISIÇÃO EM /CALCULATE ---")
-    print("CABEÇALHOS:", request.headers)
-    print("CORPO (RAW):", request.data)
-    # ----------------------------------------
-    
-    try:
-        data = request.get_json()
-        # Se get_json() não funcionar, tenta ler o corpo da requisição manualmente
-        if not data and request.data:
-            print("request.get_json() falhou. Tentando carregar request.data manualmente.")
-            data = json.loads(request.data)
-    except Exception as e:
-        print(f"ERRO AO PROCESSAR JSON: {e}")
-        return jsonify({'error': 'Formato de dados inválido.'}), 400
+    # Tenta obter os dados como JSON. silent=True evita que ele quebre se não for JSON.
+    data = request.get_json(silent=True)
 
-    print("DADOS PROCESSADOS:", data)
+    # Se não for JSON, tenta obter os dados como um formulário tradicional.
+    if data is None and request.form:
+        data = request.form.to_dict()
 
-    if not data or 'alimento' not in data or 'quantidade' not in data:
-        print("ERRO: Faltam 'alimento' ou 'quantidade' nos dados.")
+    if not data or 'alimento' not in data or 'quantidade' not in data or not data['alimento'] or not data['quantidade']:
         return jsonify({'error': 'Nome do alimento e quantidade são obrigatórios.'}), 400
 
     nome_alimento = data['alimento']
@@ -91,8 +78,8 @@ def calculate():
     if not alimento_data:
         return jsonify({'error': 'Alimento não encontrado no banco de dados.'}), 404
 
-    # Calcula os valores para a quantidade informada
-    calorias, gordura, fibra, proteina = [((val / 100) * quantidade_gramas) if val is not None else 0 for val in alimento_data]
+    # Calcula os valores para a quantidade informada, tratando valores nulos (None)
+    calorias, gordura, fibra, proteina = [((float(val) / 100) * quantidade_gramas) if val is not None else 0 for val in alimento_data]
     
     pontos = calcular_pontos(calorias, gordura, fibra, proteina)
 
